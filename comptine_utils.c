@@ -10,8 +10,10 @@
 
 int main(){
 	struct catalogue* ct=creer_catalogue("comptines");
-	for(int i=0; i<ct->nb; i++)
-		printf("%s", ct->tab[i]->nom_fichier);
+	for(int i=0; i<ct->nb; i++){
+		printf("%s", ct->tab[i]->titre);
+		printf("%s\n", ct->tab[i]->nom_fichier);
+	}
 	liberer_catalogue(ct);
 }
 
@@ -21,13 +23,13 @@ int read_until_nl(int fd, char *buf)
 	for(i=0;read(fd, &c, 1)==1; i++){
 		if(c!='\n'){
 			buf[i]=c;
-		} else {
+		} else { 
 			buf[i]='\n';
 			break;
 		}
 	}
 	close(fd);
-	return i+1;
+	return i;
 }
 
 int est_nom_fichier_comptine(char *nom_fich)
@@ -45,7 +47,7 @@ int est_nom_fichier_comptine(char *nom_fich)
 
 struct comptine *init_cpt_depuis_fichier(const char *dir_name, const char *base_name)
 {
-	char buf[128]; int fd; char* filename=malloc(sizeof(dir_name)+sizeof(base_name)+1);
+	char buf[128]; int fd; char* filename=malloc(strlen(dir_name)+strlen(base_name)+1);
 	struct comptine* c=malloc(sizeof(struct comptine));
 	strcpy(filename, dir_name);
 	strcat(filename, "/");
@@ -54,10 +56,10 @@ struct comptine *init_cpt_depuis_fichier(const char *dir_name, const char *base_
 		perror("open"); return NULL;
 	}
 	int count=read_until_nl(fd, buf);
-	close(fd);
-	c->titre=malloc(count*sizeof(char));
-	c->nom_fichier=malloc(sizeof(base_name));
-	strncpy(c->titre, buf, count); strcpy(c->nom_fichier, base_name);
+	free(filename);
+	c->titre=malloc(count+2); 
+	c->nom_fichier=strdup(base_name);
+	strncpy(c->titre, buf, count+1);
 	return c;
 }
 
@@ -65,7 +67,6 @@ void liberer_comptine(struct comptine *cpt)
 {
 	free(cpt->titre); free(cpt->nom_fichier);
 	free(cpt);
-	cpt=NULL;
 }
 
 struct catalogue *creer_catalogue(const char *dir_name)
@@ -80,7 +81,7 @@ struct catalogue *creer_catalogue(const char *dir_name)
 		}
 	};
 	struct catalogue* ct=malloc(sizeof(struct catalogue));
-	ct->tab=malloc(10*sizeof(struct comptine));
+	ct->tab=malloc(60*sizeof(struct comptine));
 	
 	while((d=readdir(dir))!=NULL){
 		if(!est_nom_fichier_comptine(d->d_name))
@@ -89,7 +90,7 @@ struct catalogue *creer_catalogue(const char *dir_name)
 		count++;
 	}
 	closedir(dir);
-	ct->nb=count+1;
+	ct->nb=count;
 	return ct;
 }
 
@@ -99,5 +100,4 @@ void liberer_catalogue(struct catalogue *c)
 		liberer_comptine(c->tab[i]);
 	free(c->tab);
 	free(c);
-	c=NULL;
 }
