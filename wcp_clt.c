@@ -1,4 +1,5 @@
 /* fichiers de la bibliothèque standard */
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,21 +49,41 @@ int main(int argc, char *argv[])
 		usage(argv[0]);
 		return 1;
 	}
-
-	/* À compléter */
+	int sd;
+	//for(;;){
+		sd=creer_connecter_sock(argv[1], PORT_WCP);
+		recevoir_liste_comptines(sd);
+		close(sd);
+	//}
 	return 0;
 }
 
 int creer_connecter_sock(char *addr_ipv4, uint16_t port)
 {
-	/* À définir */
-	return 0;
+	int sd=socket(AF_INET, SOCK_STREAM, 0);
+	if(sd<0){
+		perror("socket"); exit(-1);
+	}
+	struct sockaddr_in sa={ .sin_family=AF_INET, .sin_port=htons(port) };
+	if((inet_pton(AF_INET, addr_ipv4, &sa.sin_addr)) != -1){
+		socklen_t sl=sizeof(sa);
+		if(connect(sd, (struct sockaddr *) &sa, sl) < 0){
+			perror("connect"); exit(3);
+		}
+		return sd;
+	}
+	return -1;
 }
 
 uint16_t recevoir_liste_comptines(int fd)
 {
-	/* À définir */
-	return 0;
+	int count=0;
+	char buf[64];
+	while(read_until_nl(fd, buf)!=0){
+		count++;
+		printf("%s", buf);
+	}
+	return count;
 }
 
 uint16_t saisir_num_comptine(uint16_t nb_comptines)

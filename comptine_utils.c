@@ -8,14 +8,15 @@
 #include <fcntl.h>
 #include "comptine_utils.h"
 
-int main(){
+/*int main(){
 	struct catalogue* ct=creer_catalogue("comptines");
 	for(int i=0; i<ct->nb; i++){
-		printf("%s", ct->tab[i]->titre);
+		printf("%d %s", i, ct->tab[i]->titre);
 		printf("%s\n", ct->tab[i]->nom_fichier);
 	}
 	liberer_catalogue(ct);
-}
+	
+}*/
 
 int read_until_nl(int fd, char *buf)
 {
@@ -28,7 +29,6 @@ int read_until_nl(int fd, char *buf)
 			break;
 		}
 	}
-	close(fd);
 	return i;
 }
 
@@ -47,7 +47,7 @@ int est_nom_fichier_comptine(char *nom_fich)
 
 struct comptine *init_cpt_depuis_fichier(const char *dir_name, const char *base_name)
 {
-	char buf[128]; int fd; char* filename=malloc(strlen(dir_name)+strlen(base_name)+1);
+	int fd; char* filename=malloc(strlen(dir_name)+strlen(base_name)+1);
 	struct comptine* c=malloc(sizeof(struct comptine));
 	strcpy(filename, dir_name);
 	strcat(filename, "/");
@@ -55,11 +55,12 @@ struct comptine *init_cpt_depuis_fichier(const char *dir_name, const char *base_
 	if((fd=open(filename, O_RDONLY))<0){
 		perror("open"); return NULL;
 	}
-	int count=read_until_nl(fd, buf);
+	c->titre=malloc(64*sizeof(char));
+	int count=read_until_nl(fd, c->titre);
+	close(fd);
 	free(filename);
-	c->titre=malloc(count+2); 
+	c->titre=realloc(c->titre, (count+2)*sizeof(char));
 	c->nom_fichier=strdup(base_name);
-	strncpy(c->titre, buf, count+1);
 	return c;
 }
 

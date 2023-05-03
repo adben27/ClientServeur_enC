@@ -1,4 +1,6 @@
 /* fichiers de la bibliothèque standard */
+#include <asm-generic/socket.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,24 +57,51 @@ int main(int argc, char *argv[])
 		usage(argv[0]);
 		return 1;
 	}
-	/* À compléter */
+	struct sockaddr_in sa_clt= { .sin_family=AF_INET,
+		.sin_port=htons(PORT_WCP), };
+	if(inet_pton(AF_INET, argv[1], &sa_clt.sin_addr) != -1){
+		socklen_t sl=sizeof(sa_clt);
+		int sd=creer_configurer_sock_ecoute(PORT_WCP);
+		//for(;;){
+			sd=accept(sd, (struct sockaddr *) &sa_clt, &sl);
+			struct catalogue *c=creer_catalogue("comptines");
+			envoyer_liste(sd, c);
+			write(sd, &sd, sizeof(sd));
+			close(sd);
+		//}
+	}
 	return 0;
 }
-
 int creer_configurer_sock_ecoute(uint16_t port)
 {
-	/* À définir */
-	return 0;
+	int sd=socket(AF_INET, SOCK_STREAM,0);
+	if(sd<0){
+		perror("socket"); exit(-1); 
+	}
+	struct sockaddr_in sa= { .sin_family=AF_INET, 
+		.sin_port=htons(PORT_WCP),
+		.sin_addr.s_addr = htonl(INADDR_ANY) };
+	socklen_t sl=sizeof(sa);
+	int opt=1;
+	setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
+	if(bind(sd, (struct sockaddr *) &sa, sl) < 0){
+		perror("bind"); exit(-1);
+	}
+	if(listen(sd, 128) < 0){
+		perror("listen"); exit(-1);
+	}
+	return sd;
 }
 
 void envoyer_liste(int fd, struct catalogue *c)
 {
-	/* À définir */
+	for(int i=0; i<c->nb; i++){
+		dprintf(fd, "%6d %s", i, c->tab[i]->titre);
+	}
 }
 
 uint16_t recevoir_num_comptine(int fd)
 {
-	/* À définir */
 	return 0;
 }
 
