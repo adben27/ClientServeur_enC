@@ -26,6 +26,7 @@ int read_until_nl(int fd, char *buf)
 			buf[i]=c;
 		} else { 
 			buf[i]='\n';
+			buf[i+1]='\0';
 			break;
 		}
 	}
@@ -90,6 +91,7 @@ struct catalogue *creer_catalogue(const char *dir_name)
 		ct->tab[count]=init_cpt_depuis_fichier(dir_name, d->d_name);
 		count++;
 	}
+	ct->tab=realloc(ct->tab, count*sizeof(struct comptine));
 	closedir(dir);
 	ct->nb=count;
 	return ct;

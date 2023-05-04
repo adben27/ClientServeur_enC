@@ -67,6 +67,9 @@ int main(int argc, char *argv[])
 			struct catalogue *c=creer_catalogue("comptines");
 			envoyer_liste(sd, c);
 			write(sd, &sd, sizeof(sd));
+			int ic=recevoir_num_comptine(sd);
+			envoyer_comptine(sd, c, ic);
+			write(sd, &sd, sizeof(sd));
 			close(sd);
 		//}
 	}
@@ -102,10 +105,27 @@ void envoyer_liste(int fd, struct catalogue *c)
 
 uint16_t recevoir_num_comptine(int fd)
 {
-	return 0;
+	int nc;
+	if(read(fd, &nc, 2)<0){
+		perror("read"); exit(-1);
+	}
+	return ntohs(nc);
 }
 
 void envoyer_comptine(int fd, struct catalogue *c, uint16_t ic)
 {
-	/* À définir */
+	int textfd; char buf[256];
+	char* filename=malloc(sizeof("comptines") + sizeof(c->tab[ic]->nom_fichier) + 1);
+	strcpy(filename, "comptines"); 
+	strcat(filename, "/");
+	strcat(filename, c->tab[ic]->nom_fichier);
+	if((textfd=open(filename, O_RDONLY))<0){
+		perror("open"); exit(-1);
+	}
+	free(filename);
+	if(read(fd, buf, sizeof(buf))<0){
+		perror("read"); exit(-1);
+	}
+	close(textfd);
+	dprintf(fd, "%s\n\n%s", c->tab[ic]->titre, buf);	
 }
