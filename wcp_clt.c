@@ -53,10 +53,9 @@ int main(int argc, char *argv[])
 	//for(;;){
 		sd=creer_connecter_sock(argv[1], PORT_WCP);
 		int nbc=recevoir_liste_comptines(sd);
-		int nc=saisir_num_comptine(nbc);
-		envoyer_num_comptine(sd,nc);
-		write(sd, &sd, sizeof(sd));
-		afficher_comptine(sd);
+		//int nc=saisir_num_comptine(nbc);
+		//envoyer_num_comptine(sd,3);
+		//afficher_comptine(sd);
 		close(sd);
 	//}
 	return 0;
@@ -81,12 +80,12 @@ int creer_connecter_sock(char *addr_ipv4, uint16_t port)
 
 uint16_t recevoir_liste_comptines(int fd)
 {
-	int count=0; char buf[64];
-	while(read_until_nl(fd, buf)>0){
+	int count=0; char buf[2056];
+	while(read_until_nl(fd, buf)!=0){
 		count++;
 		printf("%s", buf);
 	}
-	return count-1;
+	return count;
 }
 
 uint16_t saisir_num_comptine(uint16_t nb_comptines)
@@ -99,12 +98,12 @@ uint16_t saisir_num_comptine(uint16_t nb_comptines)
 
 void envoyer_num_comptine(int fd, uint16_t nc)
 {
-	dprintf(fd, "%d", htons(nc));
+	write(fd, &nc, sizeof(nc));
 }
 
 void afficher_comptine(int fd)
 {
-	char buf[1024];
+	char buf[2048];
 	if(read(fd, buf, sizeof(buf))<0){
 		perror("read"); exit(-1);
 	}

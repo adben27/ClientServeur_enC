@@ -66,10 +66,9 @@ int main(int argc, char *argv[])
 			sd=accept(sd, (struct sockaddr *) &sa_clt, &sl);
 			struct catalogue *c=creer_catalogue("comptines");
 			envoyer_liste(sd, c);
-			write(sd, &sd, sizeof(sd));
-			int ic=recevoir_num_comptine(sd);
-			envoyer_comptine(sd, c, ic);
-			write(sd, &sd, sizeof(sd));
+			//int ic=recevoir_num_comptine(sd);
+			//printf("IC : %d\n", ic);
+			//envoyer_comptine(sd, c, 3);
 			close(sd);
 		//}
 	}
@@ -99,14 +98,17 @@ int creer_configurer_sock_ecoute(uint16_t port)
 void envoyer_liste(int fd, struct catalogue *c)
 {
 	for(int i=0; i<c->nb; i++){
-		dprintf(fd, "%6d %s", i, c->tab[i]->titre);
+		if(dprintf(fd, "%6d %s", i, c->tab[i]->titre)<0){
+			perror("dprintf"); exit(-1);
+		};
 	}
+	dprintf(fd, "\n");
 }
 
 uint16_t recevoir_num_comptine(int fd)
 {
 	int nc;
-	if(read(fd, &nc, 2)<0){
+	if(read(fd, &nc, sizeof(nc))<0){
 		perror("read"); exit(-1);
 	}
 	return ntohs(nc);
@@ -115,17 +117,19 @@ uint16_t recevoir_num_comptine(int fd)
 void envoyer_comptine(int fd, struct catalogue *c, uint16_t ic)
 {
 	int textfd; char buf[256];
-	char* filename=malloc(sizeof("comptines") + sizeof(c->tab[ic]->nom_fichier) + 1);
-	strcpy(filename, "comptines"); 
-	strcat(filename, "/");
-	strcat(filename, c->tab[ic]->nom_fichier);
-	if((textfd=open(filename, O_RDONLY))<0){
+	//char* filename=malloc(sizeof("comptines") + sizeof(c->tab[ic]->nom_fichier) + 1);
+	//strcpy(filename, "comptines"); 
+	//strcat(filename, "/");
+	//strcat(filename, c->tab[ic]->nom_fichier);
+	if((textfd=open("comptines/petit_lapin.cpt", O_RDONLY))<0){
 		perror("open"); exit(-1);
 	}
-	free(filename);
-	if(read(fd, buf, sizeof(buf))<0){
-		perror("read"); exit(-1);
+	//free(filename);
+	//dprintf(fd, "%s", c->tab[ic]->titre);	
+	while(read_until_nl(textfd, buf)>=0){
+		printf("%s", buf);
+		//dprintf(fd, "%s", buf);
 	}
+	//dprintf(fd, "\n\n");
 	close(textfd);
-	dprintf(fd, "%s\n\n%s", c->tab[ic]->titre, buf);	
 }
