@@ -75,11 +75,11 @@ struct catalogue *creer_catalogue(const char *dir_name)
 {
 	DIR* dir; struct dirent* d; int count=0;
 	if((dir=opendir(dir_name))==NULL){
-		perror("opendir"); return NULL;
+		perror("opendir"); exit(-1);
 	}
 	if((d=readdir(dir))==NULL){
 		if(errno==EBADF){
-			perror("readdir"); return NULL;
+			perror("readdir"); exit(-1);
 		}
 	};
 	struct catalogue* ct=malloc(sizeof(struct catalogue));

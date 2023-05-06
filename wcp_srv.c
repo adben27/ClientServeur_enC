@@ -51,12 +51,15 @@ uint16_t recevoir_num_comptine(int fd);
  *  deux lignes vides terminent le message */
 void envoyer_comptine(int fd, struct catalogue *c, uint16_t ic);
 
+char* dir_name;
+
 int main(int argc, char *argv[])
 {
 	if (argc != 2) {
 		usage(argv[0]);
 		return 1;
 	}
+	dir_name=argv[1];
 	struct sockaddr_in sa_clt= { .sin_family=AF_INET,
 		.sin_port=htons(PORT_WCP), };
 	if(inet_pton(AF_INET, argv[1], &sa_clt.sin_addr) != -1){
@@ -64,11 +67,10 @@ int main(int argc, char *argv[])
 		int sd=creer_configurer_sock_ecoute(PORT_WCP);
 		//for(;;){
 			sd=accept(sd, (struct sockaddr *) &sa_clt, &sl);
-			struct catalogue *c=creer_catalogue("comptines");
+			struct catalogue *c=creer_catalogue(dir_name);
 			envoyer_liste(sd, c);
-			//int ic=recevoir_num_comptine(sd);
-			//printf("IC : %d\n", ic);
-			//envoyer_comptine(sd, c, 3);
+			int ic=recevoir_num_comptine(sd);
+			envoyer_comptine(sd, c, ic);
 			close(sd);
 		//}
 	}
@@ -111,25 +113,25 @@ uint16_t recevoir_num_comptine(int fd)
 	if(read(fd, &nc, sizeof(nc))<0){
 		perror("read"); exit(-1);
 	}
-	return ntohs(nc);
+	nc=ntohs(nc);
+	return nc;
 }
 
 void envoyer_comptine(int fd, struct catalogue *c, uint16_t ic)
 {
-	int textfd; char buf[256];
-	//char* filename=malloc(sizeof("comptines") + sizeof(c->tab[ic]->nom_fichier) + 1);
-	//strcpy(filename, "comptines"); 
-	//strcat(filename, "/");
-	//strcat(filename, c->tab[ic]->nom_fichier);
-	if((textfd=open("comptines/petit_lapin.cpt", O_RDONLY))<0){
+	int cptfd; char buf[256];
+	char* filename=malloc(sizeof(dir_name) + sizeof(c->tab[ic]->nom_fichier) + 2);
+	strcpy(filename, dir_name); strcat(filename, "/"); strcat(filename, c->tab[ic]->nom_fichier);
+	printf("filename : %s", filename);
+	if((cptfd=open(filename, O_RDONLY))<0){
 		perror("open"); exit(-1);
 	}
-	//free(filename);
-	//dprintf(fd, "%s", c->tab[ic]->titre);	
-	while(read_until_nl(textfd, buf)>=0){
-		printf("%s", buf);
-		//dprintf(fd, "%s", buf);
+	free(filename);
+	while(read(cptfd, buf, sizeof(buf))>0){
+		if(write(fd, buf, sizeof(buf))<0){
+			perror("write"); exit(-1);
+		};
 	}
-	//dprintf(fd, "\n\n");
-	close(textfd);
+	close(cptfd);
+	dprintf(fd, "\n\n");
 }
