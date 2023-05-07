@@ -53,9 +53,11 @@ int main(int argc, char *argv[])
 	//for(;;){
 		sd=creer_connecter_sock(argv[1], PORT_WCP);
 		int nbc=recevoir_liste_comptines(sd);
-		int nc=saisir_num_comptine(nbc);
-		envoyer_num_comptine(sd,nc);
-		afficher_comptine(sd);
+		//for(;;){
+			int nc=saisir_num_comptine(nbc);
+			envoyer_num_comptine(sd,nc);
+			afficher_comptine(sd);
+		//}
 		close(sd);
 	//}
 	return 0;
@@ -90,9 +92,13 @@ uint16_t recevoir_liste_comptines(int fd)
 
 uint16_t saisir_num_comptine(uint16_t nb_comptines)
 {
-	int select;
-	printf("Quelle comptine voulez-vous ? (Entrer un entier entre 0 et %hd) : ", nb_comptines); 
-	scanf("%d", &select);
+	int select; int valid=0;
+	do{
+		printf("Quelle comptine voulez-vous ? (Entrer un entier entre 0 et %hd non compris) : ", nb_comptines); 
+		scanf("%d", &select);
+		if(select < nb_comptines)
+			valid=1;
+	} while(valid==0);
 	return select;
 }
 
@@ -106,9 +112,19 @@ void envoyer_num_comptine(int fd, uint16_t nc)
 
 void afficher_comptine(int fd)
 {
-	char buf[2048];
-	if(read(fd, buf, sizeof(buf))<0){
-		perror("read"); exit(-1);
-	}	
-	printf("%s", buf);
+	char buf[256]; FILE* fp;
+	if((fp=fdopen(fd, "r"))==NULL){
+		perror("fdopen"); exit(-1);
+	}
+	int lastlinen=0;
+	while(fgets(buf, sizeof(buf), fp)!=NULL){
+		if(buf[0]=='\n'){
+			lastlinen++;
+			if(lastlinen==3){
+				continue;
+			}
+		}
+		printf("%s", buf);
+	}
+	fclose(fp);
 }

@@ -62,18 +62,17 @@ int main(int argc, char *argv[])
 	dir_name=argv[1];
 	struct sockaddr_in sa_clt= { .sin_family=AF_INET,
 		.sin_port=htons(PORT_WCP), };
-	if(inet_pton(AF_INET, argv[1], &sa_clt.sin_addr) != -1){
 		socklen_t sl=sizeof(sa_clt);
 		int sd=creer_configurer_sock_ecoute(PORT_WCP);
+		sd=accept(sd, (struct sockaddr *) &sa_clt, &sl);
+		struct catalogue *c=creer_catalogue(dir_name);
 		//for(;;){
-			sd=accept(sd, (struct sockaddr *) &sa_clt, &sl);
-			struct catalogue *c=creer_catalogue(dir_name);
 			envoyer_liste(sd, c);
 			int ic=recevoir_num_comptine(sd);
 			envoyer_comptine(sd, c, ic);
-			close(sd);
 		//}
-	}
+		close(sd);
+		liberer_catalogue(c);
 	return 0;
 }
 int creer_configurer_sock_ecoute(uint16_t port)
@@ -119,19 +118,20 @@ uint16_t recevoir_num_comptine(int fd)
 
 void envoyer_comptine(int fd, struct catalogue *c, uint16_t ic)
 {
-	int cptfd; char buf[256];
-	char* filename=malloc(sizeof(dir_name) + sizeof(c->tab[ic]->nom_fichier) + 2);
+	FILE* cptfp; char buf[256];
+	char* filename;
+	if((filename=malloc(strlen(dir_name) + strlen(c->tab[ic]->nom_fichier) + 2))==NULL){
+		perror("malloc"); exit(-1);
+	};
 	strcpy(filename, dir_name); strcat(filename, "/"); strcat(filename, c->tab[ic]->nom_fichier);
-	printf("filename : %s", filename);
-	if((cptfd=open(filename, O_RDONLY))<0){
-		perror("open"); exit(-1);
+	if((cptfp=fopen(filename, "r"))==NULL){
+		perror("fopen"); exit(-1);
 	}
 	free(filename);
-	while(read(cptfd, buf, sizeof(buf))>0){
-		if(write(fd, buf, sizeof(buf))<0){
-			perror("write"); exit(-1);
-		};
+	while(fgets(buf, sizeof(buf), cptfp)!=NULL){
+		printf("%s", buf);
+		dprintf(fd, "%s", buf);
 	}
-	close(cptfd);
-	dprintf(fd, "\n\n");
+	dprintf(fd, "\n");
+	fclose(cptfp);
 }
