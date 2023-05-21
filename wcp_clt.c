@@ -50,16 +50,12 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	int sd;
-	//for(;;){
-		sd=creer_connecter_sock(argv[1], PORT_WCP);
-		int nbc=recevoir_liste_comptines(sd);
-		//for(;;){
-			int nc=saisir_num_comptine(nbc);
-			envoyer_num_comptine(sd,nc);
-			afficher_comptine(sd);
-		//}
-		close(sd);
-	//}
+	sd=creer_connecter_sock(argv[1], PORT_WCP);
+	int nbc=recevoir_liste_comptines(sd);
+	int nc=saisir_num_comptine(nbc);
+	envoyer_num_comptine(sd,nc);
+	afficher_comptine(sd);
+	close(sd);
 	return 0;
 }
 
@@ -67,13 +63,13 @@ int creer_connecter_sock(char *addr_ipv4, uint16_t port)
 {
 	int sd=socket(AF_INET, SOCK_STREAM, 0);
 	if(sd<0){
-		perror("socket"); exit(-1);
+		perror("socket"); exit(2);
 	}
 	struct sockaddr_in sa={ .sin_family=AF_INET, .sin_port=htons(port) };
 	if((inet_pton(AF_INET, addr_ipv4, &sa.sin_addr)) != -1){
 		socklen_t sl=sizeof(sa);
 		if(connect(sd, (struct sockaddr *) &sa, sl) < 0){
-			perror("connect"); exit(3);
+			perror("connect"); exit(2);
 		}
 		return sd;
 	}
@@ -106,7 +102,7 @@ void envoyer_num_comptine(int fd, uint16_t nc)
 {
 	nc=htons(nc);
 	if(write(fd, &nc, sizeof(nc))<0){
-		perror("write"); exit(-1);
+		perror("write"); exit(3);
 	};
 }
 
@@ -114,16 +110,9 @@ void afficher_comptine(int fd)
 {
 	char buf[256]; FILE* fp;
 	if((fp=fdopen(fd, "r"))==NULL){
-		perror("fdopen"); exit(-1);
+		perror("fdopen"); exit(3);
 	}
-	int lastlinen=0;
 	while(fgets(buf, sizeof(buf), fp)!=NULL){
-		if(buf[0]=='\n'){
-			lastlinen++;
-			if(lastlinen==3){
-				continue;
-			}
-		}
 		printf("%s", buf);
 	}
 	fclose(fp);

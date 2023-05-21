@@ -8,16 +8,6 @@
 #include <fcntl.h>
 #include "comptine_utils.h"
 
-/*int main(){
-	struct catalogue* ct=creer_catalogue("comptines");
-	for(int i=0; i<ct->nb; i++){
-		printf("%d %s", i, ct->tab[i]->titre);
-		printf("%s\n", ct->tab[i]->nom_fichier);
-	}
-	liberer_catalogue(ct);
-	
-}*/
-
 int read_until_nl(int fd, char *buf)
 {
 	char c; int i;
@@ -48,20 +38,28 @@ int est_nom_fichier_comptine(char *nom_fich)
 
 struct comptine *init_cpt_depuis_fichier(const char *dir_name, const char *base_name)
 {
-	int fd; char* filename=malloc(strlen(dir_name)+strlen(base_name)+1);
-	struct comptine* c=malloc(sizeof(struct comptine));
+	int fd; char* filename;
+	if((filename=malloc(strlen(dir_name)+strlen(base_name)+1))<0){
+		perror("malloc"); return NULL;
+	};
+	struct comptine* c;
+	if((c=malloc(sizeof(struct comptine)))<0){
+		perror("malloc"); return NULL;
+	};
 	strcpy(filename, dir_name);
 	strcat(filename, "/");
 	strcat(filename, base_name);
 	if((fd=open(filename, O_RDONLY))<0){
 		perror("open"); return NULL;
 	}
-	c->titre=malloc(256*sizeof(char));
+	if((c->titre=malloc(256*sizeof(char)))<0){
+		perror("malloc"); return NULL;
+	};
 	int count=read_until_nl(fd, c->titre);
 	close(fd);
 	free(filename);
 	if((c->titre=realloc(c->titre, (count+2)*sizeof(char)))==NULL){
-		perror("realloc"); exit(-1);
+		perror("realloc"); return NULL;
 	};
 	c->nom_fichier=strdup(base_name);
 	return c;
@@ -77,23 +75,32 @@ struct catalogue *creer_catalogue(const char *dir_name)
 {
 	DIR* dir; struct dirent* d; int count=0; int max_size=60;
 	if((dir=opendir(dir_name))==NULL){
-		perror("opendir"); exit(-1);
+		perror("opendir"); return NULL;
 	}
 	if((d=readdir(dir))==NULL){
 		if(errno==EBADF){
-			perror("readdir"); exit(-1);
+			perror("readdir"); return NULL;
 		}
 	};
-	struct catalogue* ct=malloc(sizeof(struct catalogue));
-	ct->tab=malloc(max_size*sizeof(struct comptine));
+	struct catalogue* ct; 
+	if((ct=malloc(sizeof(struct catalogue)))<0){
+		perror("malloc"); return NULL;
+	};
+	if((ct->tab=malloc(max_size*sizeof(struct comptine)))<0){
+		perror("malloc"); return NULL;
+	};
 	
 	while((d=readdir(dir))!=NULL){
 		if(!est_nom_fichier_comptine(d->d_name))
 			continue;
-		ct->tab[count]=init_cpt_depuis_fichier(dir_name, d->d_name);
+		if((ct->tab[count]=init_cpt_depuis_fichier(dir_name, d->d_name))<0){
+			perror("init_cpt"); return NULL;
+		};
 		count++;
 		if(count>=max_size-5){
-			ct->tab=realloc(ct->tab, (max_size+5)*sizeof(struct comptine));
+			if((ct->tab=realloc(ct->tab, (max_size+5)*sizeof(struct comptine)))<0){
+				perror("realloc"); return NULL;
+			};
 			max_size+=5;
 		}
 	}
