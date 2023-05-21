@@ -14,7 +14,7 @@ La structure `work` a été nécessaire afin d'y faire passer les informations n
 Le serveur enregistre les connexions dans un fichier log. Un mutex a été nécessaire pour éviter les effets de compétition entre threads. Chaque ligne du fichier log contient l'heure de connexion, l'IP de connexion, le répertoire de comptines, le numéro de comptine demandé ainsi que son titre.
 
 ## Ce qui ne fonctionne pas
-Je pense que dans ce code, tout marche comme prévu, mais j'aurais aimé faire plus que ce que j'ai fait. Malheuresement j'ai manqué de temps.
+Tout semble fonctionner comme prévu. Néanmoins j'aurais vraiment aimé faire plus de choses. Mais j'ai manqué de temps.
 
 ## Ressources externes au cours ?
 J'ai eu besoin de consulter des pages de manuel pour faire la fonction `getdate`.

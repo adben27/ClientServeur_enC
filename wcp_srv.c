@@ -63,7 +63,6 @@ struct work{
 	int sd;
 	struct catalogue *c;
 	char* dirname;
-	char* addr_ipv4;
 };
 
 void* worker (void* arg);
@@ -111,12 +110,9 @@ int main(int argc, char *argv[])
 
 		w->sd =accept(sd, (struct sockaddr *) &sa_clt, &sl);
 		if(w->sd==-1){
-			perror("accept"); exit(-1);
+			perror("accept"); exit(2);
 		}
 		w->c=c; w->dirname=argv[1];
-		char buf[64];
-		inet_ntop(AF_INET, &(sa_clt.sin_addr), buf, sl);
-		w->addr_ipv4=buf;
 		pthread_t th;
 		if(pthread_create(&th, NULL, worker, w)<0){
 			perror("pthread_create"); exit(1);
@@ -132,10 +128,15 @@ int main(int argc, char *argv[])
 void* worker(void* arg)
 {
 	struct work *w= arg;
+	struct sockaddr_in sa_ip; socklen_t sl=sizeof(sa_ip); char addr_ipv4[64];
 	envoyer_liste(w->sd, w->c);
 	int ic=recevoir_num_comptine(w->sd);
 	pthread_mutex_lock(&acces_log);
-	printtolog(getdate(), w->addr_ipv4, w->dirname, ic, w->c);
+	if(getsockname(w->sd, (struct sockaddr *) &sa_ip, &sl)<0){
+		perror("getsockname"); exit(2);
+	}
+	inet_ntop(AF_INET, &sa_ip.sin_addr, addr_ipv4, sl);
+	printtolog(getdate(), addr_ipv4, w->dirname, ic, w->c);
 	pthread_mutex_unlock(&acces_log);
 	envoyer_comptine(w->sd, w->dirname, w->c, ic);
 	close(w->sd);
