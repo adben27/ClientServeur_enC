@@ -57,6 +57,14 @@ uint16_t recevoir_num_comptine(int fd);
  *  deux lignes vides terminent le message */
 void envoyer_comptine(int fd, const char *dirname, struct catalogue *c, uint16_t ic);
 
+struct work{
+	int sd;
+	struct catalogue *c;
+	const char* dirname;
+};
+
+void* worker (void* arg);
+
 int main(int argc, char *argv[])
 {
 	if (argc != 2) {
@@ -68,7 +76,7 @@ int main(int argc, char *argv[])
 	if((c=creer_catalogue(argv[1]))==NULL){
 		perror("creer_catalogue"); exit(1);
 	};
-	struct sockaddr_in sa_clt;
+	/*struct sockaddr_in sa_clt;
 	socklen_t sl=sizeof(sa_clt);
 	if((sd=accept(sd, (struct sockaddr *) &sa_clt, &sl))<0){
 		perror("accept"); exit(2);
@@ -77,8 +85,41 @@ int main(int argc, char *argv[])
 	int ic=recevoir_num_comptine(sd);
 	envoyer_comptine(sd, argv[1], c, ic);
 	close(sd);
+	liberer_catalogue(c);*/
+
+	for (;;) {
+		struct work *w;
+		if((w=malloc(sizeof(struct work)))<0){
+			perror("malloc"); exit(1);
+		}
+		struct sockaddr_in sa_clt;
+		socklen_t sl=sizeof(sa_clt);
+
+		w->sd =accept(sd, (struct sockaddr *) &sa_clt, &sl);
+		if(w->sd==-1){
+			perror("accept");
+		}
+		w->c=c; w->dirname=argv[1];
+		pthread_t th;
+		if(pthread_create(&th, NULL, worker, w)<0){
+			perror("pthread_create"); exit(1);
+		}
+		pthread_detach(th);
+	}
+	close(sd);
 	liberer_catalogue(c);
 	return 0;
+}
+
+void* worker(void* arg)
+{
+	struct work *w= arg;
+	envoyer_liste(w->sd, w->c);
+	int ic=recevoir_num_comptine(w->sd);
+	envoyer_comptine(w->sd, w->dirname, w->c, ic);
+	close(w->sd);
+	free(w);
+	return NULL;
 }
 
 int creer_configurer_sock_ecoute(uint16_t port)
