@@ -23,6 +23,8 @@
 #include "comptine_utils.h"
 #include <pthread.h>
 #include <bits/pthreadtypes.h>
+/* Pour getdate*/
+#include <time.h>
 
 #define PORT_WCP 4321
 
@@ -60,10 +62,19 @@ void envoyer_comptine(int fd, const char *dirname, struct catalogue *c, uint16_t
 struct work{
 	int sd;
 	struct catalogue *c;
-	const char* dirname;
+	char* dirname;
+	char* addr_ipv4;
 };
 
 void* worker (void* arg);
+
+/* Donne la date actuelle*/
+char* getdate();
+
+/*Ecrit dans un fichier de log la date de la connexion, l'addresse IPv4, le répertoire, le numéro de comptine, et son titre*/
+void printtolog(char* date, char* addr_ipv4, char* dirname, int ic, struct catalogue *c);
+
+pthread_mutex_t acces_log;
 
 int main(int argc, char *argv[])
 {
@@ -89,7 +100,10 @@ int main(int argc, char *argv[])
 
 	for (;;) {
 		struct work *w;
-		if((w=malloc(sizeof(struct work)))<0){
+		if(pthread_mutex_init(&acces_log, NULL)!=0){
+			perror("pthread_mutex_init"); exit(1);
+		}
+		if((w=malloc(sizeof(struct work)))==NULL){
 			perror("malloc"); exit(1);
 		}
 		struct sockaddr_in sa_clt;
@@ -97,14 +111,18 @@ int main(int argc, char *argv[])
 
 		w->sd =accept(sd, (struct sockaddr *) &sa_clt, &sl);
 		if(w->sd==-1){
-			perror("accept");
+			perror("accept"); exit(-1);
 		}
 		w->c=c; w->dirname=argv[1];
+		char buf[64];
+		inet_ntop(AF_INET, &(sa_clt.sin_addr), buf, sl);
+		w->addr_ipv4=buf;
 		pthread_t th;
 		if(pthread_create(&th, NULL, worker, w)<0){
 			perror("pthread_create"); exit(1);
 		}
 		pthread_detach(th);
+		pthread_mutex_destroy(&acces_log);
 	}
 	close(sd);
 	liberer_catalogue(c);
@@ -116,6 +134,9 @@ void* worker(void* arg)
 	struct work *w= arg;
 	envoyer_liste(w->sd, w->c);
 	int ic=recevoir_num_comptine(w->sd);
+	pthread_mutex_lock(&acces_log);
+	printtolog(getdate(), w->addr_ipv4, w->dirname, ic, w->c);
+	pthread_mutex_unlock(&acces_log);
 	envoyer_comptine(w->sd, w->dirname, w->c, ic);
 	close(w->sd);
 	free(w);
@@ -142,6 +163,47 @@ int creer_configurer_sock_ecoute(uint16_t port)
 	}
 	return sd;
 }
+
+char* getdate()
+{
+
+    time_t currentTime;
+    struct tm *localTime;
+    char * datetime;
+    if((datetime=malloc(80*sizeof(char)))==NULL){
+	perror("malloc"); exit(1);
+    }
+
+    currentTime = time(NULL);
+
+    localTime = localtime(&currentTime);
+
+    int year = localTime->tm_year + 1900;
+    int month = localTime->tm_mon + 1; 
+    int day = localTime->tm_mday; 
+
+    int hour = localTime->tm_hour; 
+    int minute = localTime->tm_min; 
+    int second = localTime->tm_sec; 
+
+    sprintf(datetime, "%02d-%02d-%d %02d:%02d:%02d", day, month, year, hour, minute, second);
+
+    return datetime;
+}
+
+void printtolog(char* date, char* addr_ipv4, char* dirname, int ic, struct catalogue *c)
+{
+	int logfd;
+	if((logfd=open("wcp.log", O_WRONLY))<0){
+		perror("printtolog"); exit(3);
+	}
+
+	dprintf(logfd, "%s - %s - Répertoire %s - Comptine numéro %d de titre : %s\n\n", date, addr_ipv4, dirname, ic, c->tab[ic]->titre);
+	
+	free(date);
+}
+
+
 
 void envoyer_liste(int fd, struct catalogue *c)
 {

@@ -42,28 +42,28 @@ int est_nom_fichier_comptine(char *nom_fich)
 struct comptine *init_cpt_depuis_fichier(const char *dir_name, const char *base_name)
 {
 	int fd; char* filename;
-	if((filename=malloc(strlen(dir_name)+strlen(base_name)+1))<0){
+	if((filename=malloc(strlen(dir_name)+strlen(base_name)+1))==NULL){
 		return NULL;
-	};
+	}
 	struct comptine* c;
-	if((c=malloc(sizeof(struct comptine)))<0){
+	if((c=malloc(sizeof(struct comptine)))==NULL){
 		return NULL;
-	};
+	}
 	strcpy(filename, dir_name);
 	strcat(filename, "/");
 	strcat(filename, base_name);
 	if((fd=open(filename, O_RDONLY))<0){
 		return NULL;
 	}
-	if((c->titre=malloc(256*sizeof(char)))<0){
+	if((c->titre=malloc(256*sizeof(char)))==NULL){
 		return NULL;
-	};
+	}
 	int count=read_until_nl(fd, c->titre);
 	close(fd);
 	free(filename);
 	if((c->titre=realloc(c->titre, (count+2)*sizeof(char)))==NULL){
 		return NULL;
-	};
+	}
 	c->nom_fichier=strdup(base_name);
 	return c;
 }
@@ -86,7 +86,7 @@ struct catalogue *creer_catalogue(const char *dir_name)
 		}
 	};
 	struct catalogue* ct; 
-	if((ct=malloc(sizeof(struct catalogue)))<0){
+	if((ct=malloc(sizeof(struct catalogue)))==NULL){
 		return NULL;
 	}
 
@@ -95,14 +95,14 @@ struct catalogue *creer_catalogue(const char *dir_name)
 			continue;
 		count++;
 	}
-	if((ct->tab=malloc(count*sizeof(struct comptine)))<0){
+	if((ct->tab=malloc(count*sizeof(struct comptine)))==NULL){
 		return NULL;
 	}
 	count=0; rewinddir(dir);
 	while((d=readdir(dir))!=NULL){
 		if(!est_nom_fichier_comptine(d->d_name))
 			continue;
-		if((ct->tab[count]=init_cpt_depuis_fichier(dir_name, d->d_name))<0){
+		if((ct->tab[count]=init_cpt_depuis_fichier(dir_name, d->d_name))==NULL){
 			return NULL;
 		}
 		count++;
