@@ -194,7 +194,7 @@ char* getdate()
 void printtolog(char* date, char* addr_ipv4, char* dirname, int ic, struct catalogue *c)
 {
 	int logfd;
-	if((logfd=open("wcp.log", O_WRONLY))<0){
+	if((logfd=open("wcp.log", O_WRONLY | O_APPEND))<0){
 		perror("printtolog"); exit(3);
 	}
 
