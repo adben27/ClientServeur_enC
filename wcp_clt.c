@@ -1,3 +1,6 @@
+/* Adel BENNOUAR 12003494
+ * Je déclare qu'il s'agit de mon propre travail */
+
 /* fichiers de la bibliothèque standard */
 #include <netinet/in.h>
 #include <stdio.h>

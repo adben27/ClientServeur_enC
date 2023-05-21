@@ -1,3 +1,6 @@
+/* Adel BENNOUAR 12003494
+ * Je déclare qu'il s'agit de mon propre travail */
+
 #include <asm-generic/errno-base.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,26 +43,26 @@ struct comptine *init_cpt_depuis_fichier(const char *dir_name, const char *base_
 {
 	int fd; char* filename;
 	if((filename=malloc(strlen(dir_name)+strlen(base_name)+1))<0){
-		perror("malloc"); return NULL;
+		return NULL;
 	};
 	struct comptine* c;
 	if((c=malloc(sizeof(struct comptine)))<0){
-		perror("malloc"); return NULL;
+		return NULL;
 	};
 	strcpy(filename, dir_name);
 	strcat(filename, "/");
 	strcat(filename, base_name);
 	if((fd=open(filename, O_RDONLY))<0){
-		perror("open"); return NULL;
+		return NULL;
 	}
 	if((c->titre=malloc(256*sizeof(char)))<0){
-		perror("malloc"); return NULL;
+		return NULL;
 	};
 	int count=read_until_nl(fd, c->titre);
 	close(fd);
 	free(filename);
 	if((c->titre=realloc(c->titre, (count+2)*sizeof(char)))==NULL){
-		perror("realloc"); return NULL;
+		return NULL;
 	};
 	c->nom_fichier=strdup(base_name);
 	return c;
@@ -73,36 +76,36 @@ void liberer_comptine(struct comptine *cpt)
 
 struct catalogue *creer_catalogue(const char *dir_name)
 {
-	DIR* dir; struct dirent* d; int count=0; int max_size=60;
+	DIR* dir; struct dirent* d; int count=0;
 	if((dir=opendir(dir_name))==NULL){
-		perror("opendir"); return NULL;
+		return NULL;
 	}
 	if((d=readdir(dir))==NULL){
 		if(errno==EBADF){
-			perror("readdir"); return NULL;
+			return NULL;
 		}
 	};
 	struct catalogue* ct; 
 	if((ct=malloc(sizeof(struct catalogue)))<0){
-		perror("malloc"); return NULL;
-	};
-	if((ct->tab=malloc(max_size*sizeof(struct comptine)))<0){
-		perror("malloc"); return NULL;
-	};
-	
+		return NULL;
+	}
+
+	while((d=readdir(dir))!=NULL){
+		if(!est_nom_fichier_comptine(d->d_name))
+			continue;
+		count++;
+	}
+	if((ct->tab=malloc(count*sizeof(struct comptine)))<0){
+		return NULL;
+	}
+	count=0; rewinddir(dir);
 	while((d=readdir(dir))!=NULL){
 		if(!est_nom_fichier_comptine(d->d_name))
 			continue;
 		if((ct->tab[count]=init_cpt_depuis_fichier(dir_name, d->d_name))<0){
-			perror("init_cpt"); return NULL;
-		};
-		count++;
-		if(count>=max_size-5){
-			if((ct->tab=realloc(ct->tab, (max_size+5)*sizeof(struct comptine)))<0){
-				perror("realloc"); return NULL;
-			};
-			max_size+=5;
+			return NULL;
 		}
+		count++;
 	}
 	closedir(dir);
 	ct->nb=count;

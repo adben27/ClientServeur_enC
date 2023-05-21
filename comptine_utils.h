@@ -1,3 +1,6 @@
+/* Adel BENNOUAR 12003494
+ * Je déclare qu'il s'agit de mon propre travail */
+
 #ifndef COMPTINE_UTILS_H
 #define COMPTINE_UTILS_H
 
